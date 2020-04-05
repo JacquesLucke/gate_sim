@@ -9,7 +9,7 @@ jobs:
     runs-on: [ubuntu-latest]
 
     steps:
-      - run: sudo apt install xorg-dev libglu1-mesa-dev
+      - run: sudo apt-get install xorg-dev libglu1-mesa-dev
         
       - uses: actions/checkout@v2
 
