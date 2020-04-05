@@ -23,15 +23,17 @@ include_directories(
     extern/bas/include/
     extern/glfw/include/
     extern/glad/include/
+    extern/imgui/
 )
 
 add_subdirectory(extern)
 
-add_library(glad STATIC extern/glad/src/glad.c)
-
 add_executable(gate_sim ${GATE_SIM_SOURCES})
-target_link_libraries(gate_sim glad)
-target_link_libraries(gate_sim glfw)
+target_link_libraries(gate_sim
+  glad
+  glfw
+  imgui_for_glfw
+)
 
 # Generate many warnings.
 if(MSVC)

@@ -6,6 +6,10 @@
 
 #include "GLFW/glfw3.h"
 
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 using bas::Vector;
 
 int main()
@@ -24,15 +28,33 @@ int main()
         return 1;
     }
     glfwMakeContextCurrent(window);
+    glfwSwapInterval(1);
+
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     std::cout << "OpenGL: " << glGetString(GL_VERSION) << "\n";
 
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init(nullptr);
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        ImGui::Begin("Hello World");
+        ImGui::End();
+
+        ImGui::Render();
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
     }
 
+    ImGui_ImplGlfw_Shutdown();
     glfwDestroyWindow(window);
     glfwTerminate();
 
