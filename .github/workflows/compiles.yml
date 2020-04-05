@@ -1,0 +1,44 @@
+name: Compiles
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  test-linux:
+    runs-on: [ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: mkdir build
+      - run: cmake ../ -DCMAKE_BUILD_TYPE=Debug
+        working-directory: build
+      - run: make
+        working-directory: build
+
+  test-macos:
+    runs-on: [macos-latest]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: mkdir build
+      - run: cmake ../ -DCMAKE_BUILD_TYPE=Debug
+        working-directory: build
+      - run: make
+        working-directory: build
+
+  test-windows:
+    runs-on: [windows-latest]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - run: mkdir build
+      - run: cmake ..
+        working-directory: build
+      - run: msbuild gate_sim.sln /t:Build /p:Configuration=Debug
+        working-directory: build
