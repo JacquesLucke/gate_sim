@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "bas/vector.h"
+#include "bas/stack.h"
 
 #include "glad/glad.h"
 
@@ -10,7 +10,46 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-using bas::Vector;
+using bas::Stack;
+
+struct MySettings {
+    int a;
+    int b;
+};
+
+static MySettings my_settings;
+
+static Stack<MySettings> undo_stack;
+
+static void push_undo_step()
+{
+    undo_stack.push(my_settings);
+    std::cout << "Push undo step\n";
+}
+
+static void pop_undo_step()
+{
+    if (undo_stack.size() <= 1) {
+        std::cout << "End of undo stack\n";
+        return;
+    }
+
+    undo_stack.pop();
+    my_settings = undo_stack.peek();
+    std::cout << "Pop undo step\n";
+}
+
+static void push_undo_after_edit()
+{
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        push_undo_step();
+    }
+}
+
+static bool is_key_down(GLFWwindow *window, int key)
+{
+    return glfwGetKey(window, key) == GLFW_PRESS;
+}
 
 int main()
 {
@@ -38,13 +77,31 @@ int main()
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(nullptr);
 
+    bool z_was_down = false;
+    push_undo_step();
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+
+        bool z_is_down = is_key_down(window, GLFW_KEY_Z);
+
+        if (is_key_down(window, GLFW_KEY_LEFT_CONTROL) && !z_was_down &&
+            z_is_down) {
+            pop_undo_step();
+        }
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
+
         ImGui::NewFrame();
 
-        ImGui::Begin("Hello World");
+        ImGui::Begin("My Window");
+
+        ImGui::SliderInt("A", &my_settings.a, 0, 100);
+        push_undo_after_edit();
+        ImGui::InputInt("B", &my_settings.b);
+        push_undo_after_edit();
+
         ImGui::End();
 
         ImGui::Render();
@@ -52,6 +109,8 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
+
+        z_was_down = z_is_down;
     }
 
     ImGui_ImplGlfw_Shutdown();
