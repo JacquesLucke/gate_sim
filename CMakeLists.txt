@@ -21,9 +21,17 @@ set(GATE_SIM_SOURCES
 
 include_directories(
     extern/bas/include/
+    extern/glfw/include/
+    extern/glad/include/
 )
 
+add_subdirectory(extern)
+
+add_library(glad STATIC extern/glad/src/glad.c)
+
 add_executable(gate_sim ${GATE_SIM_SOURCES})
+target_link_libraries(gate_sim glad)
+target_link_libraries(gate_sim glfw)
 
 # Generate many warnings.
 if(MSVC)
