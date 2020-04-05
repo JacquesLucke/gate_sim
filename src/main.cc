@@ -25,6 +25,7 @@ int main()
     }
     glfwMakeContextCurrent(window);
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+    std::cout << "OpenGL: " << glGetString(GL_VERSION) << "\n";
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
