@@ -95,13 +95,34 @@ int main()
 
         ImGui::NewFrame();
 
-        ImGui::Begin("My Window");
+        ImGui::SetNextWindowPos({0, 0});
+        int width, height;
+        glfwGetWindowSize(window, &width, &height);
+        ImGui::SetNextWindowSize({(float)width, (float)height});
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+
+        ImGui::Begin("My Window",
+                     nullptr,
+                     ImGuiWindowFlags_NoDecoration |
+                         ImGuiWindowFlags_NoBringToFrontOnFocus);
+
+        ImGui::SetCursorPosY(100);
+        for (int i = 0; i < 10; i++) {
+            ImGui::SetCursorPosX(200);
+            ImGui::Text("My Label");
+        }
 
         ImGui::SliderInt("A", &my_settings.a, 0, 100);
         push_undo_after_edit();
         ImGui::InputInt("B", &my_settings.b);
         push_undo_after_edit();
 
+        ImGui::End();
+
+        ImGui::PopStyleVar();
+
+        ImGui::Begin("Other Window");
+        ImGui::Text("Hello World");
         ImGui::End();
 
         ImGui::Render();
