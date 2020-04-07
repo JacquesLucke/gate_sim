@@ -1,6 +1,9 @@
 #include <iostream>
 
+#include "bas/map.h"
+#include "bas/multi_map.h"
 #include "bas/stack.h"
+#include "bas/vector_set.h"
 
 #include "glad/glad.h"
 
@@ -10,7 +13,112 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+using bas::ArrayRef;
+using bas::Map;
+using bas::MultiMap;
+using bas::size_t;
 using bas::Stack;
+using bas::Vector;
+using bas::VectorSet;
+
+using uint = unsigned int;
+
+struct float2 {
+    float x, y;
+};
+
+enum class SocketType { Input, Output };
+
+class ComponentUI {
+  protected:
+    Vector<float2> m_relative_positions;
+    Vector<float2> m_normalized_outgoing_directions;
+    float2 m_size;
+
+  public:
+    virtual void draw(ImDrawList *draw_list,
+                      ArrayRef<float2> positions,
+                      float scale) const = 0;
+
+    ArrayRef<float2> relative_positions() const
+    {
+        return m_relative_positions;
+    }
+
+    ArrayRef<float2> normalized_outgoing_directions() const
+    {
+        return m_normalized_outgoing_directions;
+    }
+
+    float2 size()
+    {
+        return m_size;
+    }
+};
+
+class ComponentSockets {
+  private:
+    Vector<uint> m_widths;
+    Vector<SocketType> m_types;
+};
+
+class Component {
+  private:
+    ComponentUI *m_ui;
+    ComponentSockets *m_sockets;
+};
+
+class ComponentInstance {
+  private:
+    float2 m_position;
+    Component *m_component;
+};
+
+struct SocketID {
+    ComponentInstance *instance;
+    uint index;
+};
+
+class Wire {
+    SocketID from;
+    Vector<SocketID> to;
+};
+
+class Circuit {
+    VectorSet<ComponentInstance *> m_components;
+    Map<SocketID, Wire *> m_incoming_wires;
+    Map<SocketID, Wire *> m_outgoing_wires;
+};
+
+class BoxComponentUI : public ComponentUI {
+  public:
+    BoxComponentUI(uint left_sockets,
+                   uint right_sockets,
+                   uint top_sockets,
+                   uint bottom_sockets)
+        : ComponentUI()
+    {
+        uint vertical_amount = std::max(left_sockets, right_sockets);
+        uint horizontal_amount = std::max(top_sockets, bottom_sockets);
+
+        float margin = 20;
+        float distance = 10;
+
+        m_size = {0, 0};
+        if (horizontal_amount >= 2) {
+            m_size.x = 2 * margin + (horizontal_amount - 1) * distance;
+        }
+        else {
+            m_size.x = 2 * margin;
+        }
+        if (vertical_amount >= 2) {
+            m_size.y = 2 * margin + (vertical_amount - 1) * distance;
+        }
+        else {
+            m_size.y = 2 * margin;
+        }
+    }
+};
 
 struct MySettings {
     int a;
@@ -80,6 +188,11 @@ int main()
     bool z_was_down = false;
     push_undo_step();
 
+    float rect_pos_x = 10.0f;
+
+    double last_mouse_x = 0.0f;
+    double last_mouse_y = 0.0f;
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -104,25 +217,37 @@ int main()
         ImGui::Begin("My Window",
                      nullptr,
                      ImGuiWindowFlags_NoDecoration |
-                         ImGuiWindowFlags_NoBringToFrontOnFocus);
+                         ImGuiWindowFlags_NoBringToFrontOnFocus |
+                         ImGuiWindowFlags_NoInputs);
 
-        ImGui::SetCursorPosY(100);
-        for (int i = 0; i < 10; i++) {
-            ImGui::SetCursorPosX(200);
-            ImGui::Text("My Label");
+        double mouse_x, mouse_y;
+        glfwGetCursorPos(window, &mouse_x, &mouse_y);
+        // rect_pos_x = mouse_x;
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+        if (!ImGui::GetIO().WantCaptureMouse &&
+            glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+            BAS_UNUSED_VAR(last_mouse_y);
+            rect_pos_x += mouse_x - last_mouse_x;
         }
 
-        ImGui::SliderInt("A", &my_settings.a, 0, 100);
-        push_undo_after_edit();
-        ImGui::InputInt("B", &my_settings.b);
-        push_undo_after_edit();
+        draw_list->AddRectFilled({rect_pos_x, 10},
+                                 {rect_pos_x + 100, 200},
+                                 ImColor(0.8f, 0.8f, 0.3f));
+        const char *text = "Hello World";
+        draw_list->AddText({rect_pos_x, 100}, IM_COL32_WHITE, text, text + 8);
+
+        ImDrawList *foreground_list = ImGui::GetForegroundDrawList();
+        foreground_list->AddLine({0, 0}, {300, 300}, ImColor(255, 0, 0), 4);
 
         ImGui::End();
 
         ImGui::PopStyleVar();
 
         ImGui::Begin("Other Window");
-        ImGui::Text("Hello World");
+        ImGui::SliderInt("A", &my_settings.a, 0, 100);
+        push_undo_after_edit();
+        ImGui::InputInt("B", &my_settings.b);
+        push_undo_after_edit();
         ImGui::End();
 
         ImGui::Render();
@@ -132,6 +257,8 @@ int main()
         glfwSwapBuffers(window);
 
         z_was_down = z_is_down;
+        last_mouse_x = mouse_x;
+        last_mouse_y = mouse_y;
     }
 
     ImGui_ImplGlfw_Shutdown();
