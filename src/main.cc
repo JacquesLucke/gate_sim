@@ -221,7 +221,7 @@ int main()
                     color.Value.x *= 0.6f;
                 }
                 if (!imgui_uses_mouse && box.contains(mouse_position)) {
-                    color.Value.x *= 0.8;
+                    color.Value.x *= 0.8f;
                 }
 
                 draw_list->AddRectFilled(
